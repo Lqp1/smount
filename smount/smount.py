@@ -60,7 +60,6 @@ class SerialMounter:
     CONFIGS = ["/etc/smount", "~/.config/smount", "~/.smount"]
 
     def __init__(self):
-        print("tutuo")
         self.refresh_config()
 
     def get_files(self, path):
