@@ -153,9 +153,17 @@ def main(argv):
             for i in range(len(mount_points)):
                 print(f"{i} - {mount_points[i]}")
         
-            selected = int(input("select> "))
-            
-            if selected > len(mount_points) or selected < 0:
+            try:
+                selected = input("select> ")
+            except KeyboardInterrupt:
+                selected = 'q'
+
+            if selected == 'q':
+                sys.exit(0)
+            if selected in [ 'r', '' ]:
+                continue
+
+            if int(selected) > len(mount_points) or int(selected) < 0:
                 raise RuntimeError
         
             point = mount_points[selected]
