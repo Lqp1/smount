@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+
+import sys
+from smount.smount import SerialMounter
+
+def execute(context, command, arg):
+    if command == "list":
+        available = context.get_mount_points()
+        for i in available:
+            print(f"{i}")
+    elif command == "mount":
+        mount = context.get(arg)
+        if mount is None:
+            print(f"{command}: '{arg}' could not be found")
+            return
+        if mount.ismounted():
+            print(f"{command}: '{arg}' is already mounted")
+            return
+        mount.mount()
+    elif command == "help":
+        print("Available commands: list, mount, unmount")
+    elif command == "unmount":
+        mount = context.get(arg)
+        if mount is None:
+            print(f"{command}: '{arg}' could not be found")
+            return
+        if not mount.ismounted():
+            print(f"{command}: '{arg}' is not mounted")
+            return
+        mount.unmount()
+    else:
+        print(f"Unknown command {command}")
+
+def main(argv):
+    o = SerialMounter()
+    command = None
+    arg = None
+
+    if len(argv) == 1:
+        mount_points = o.get_mount_points()
+        while True:
+            for i in range(len(mount_points)):
+                print(f"{i} - {mount_points[i]}")
+        
+            try:
+                selected = input("select> ")
+            except KeyboardInterrupt:
+                selected = 'q'
+
+            if selected == 'q':
+                sys.exit(0)
+            if selected in [ 'r', '' ]:
+                continue
+
+            if int(selected) > len(mount_points) or int(selected) < 0:
+                raise RuntimeError
+        
+            point = mount_points[selected]
+            point.toggle()
+        return
+
+    if len(argv) >= 2:
+        command = argv[1]
+
+    if len(argv) >= 3:
+        arg = argv[2]
+
+    execute(o, command, arg)
+
+if __name__ == "__main__":
+    # execute only if run as a script
+    main(sys.argv)

@@ -1,9 +1,6 @@
-#!/usr/bin/env python
-
 import yaml
 import string
 import os
-import sys
 import re
 
 class MountType:
@@ -60,9 +57,10 @@ class MountPoint:
             return f"🔴 {s}"
 
 class SerialMounter:
-    CONFIGS = ["/etc/smount", "~/.config/smount", "~/.smount", "config/mounts.yml"]
+    CONFIGS = ["/etc/smount", "~/.config/smount", "~/.smount"]
 
     def __init__(self):
+        print("tutuo")
         self.refresh_config()
 
     def get_files(self, path):
@@ -70,7 +68,7 @@ class SerialMounter:
             return [path]
         if not os.path.isdir(path):
             return []
-        return [f for f in os.listdir(path) if os.path.isfile(os.join(path, f))].sort()
+        return [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))].sort()
 
     def load_types(self, _path):
         for path in self.get_files(_path):
@@ -99,9 +97,9 @@ class SerialMounter:
         self.mount_types = {}
         self.mount_points = []
         for config in self.CONFIGS:
-            self.load_types(config)
+            self.load_types(os.path.expanduser(config))
         for config in self.CONFIGS:
-            self.load_mounts(config)
+            self.load_mounts(os.path.expanduser(config))
 
     def get_mount_points(self):
         return self.mount_points
@@ -111,73 +109,3 @@ class SerialMounter:
         if len(matching) == 0:
             return None
         return matching[0]
-
-
-
-def execute(context, command, arg):
-    if command == "list":
-        available = context.get_mount_points()
-        for i in available:
-            print(f"{i}")
-    elif command == "mount":
-        mount = context.get(arg)
-        if mount is None:
-            print(f"{command}: '{arg}' could not be found")
-            return
-        if mount.ismounted():
-            print(f"{command}: '{arg}' is already mounted")
-            return
-        mount.mount()
-    elif command == "help":
-        print("Available commands: list, mount, unmount")
-    elif command == "unmount":
-        mount = context.get(arg)
-        if mount is None:
-            print(f"{command}: '{arg}' could not be found")
-            return
-        if not mount.ismounted():
-            print(f"{command}: '{arg}' is not mounted")
-            return
-        mount.unmount()
-    else:
-        print(f"Unknown command {command}")
-
-def main(argv):
-    o = SerialMounter()
-    command = None
-    arg = None
-
-    if len(argv) == 1:
-        mount_points = o.get_mount_points()
-        while True:
-            for i in range(len(mount_points)):
-                print(f"{i} - {mount_points[i]}")
-        
-            try:
-                selected = input("select> ")
-            except KeyboardInterrupt:
-                selected = 'q'
-
-            if selected == 'q':
-                sys.exit(0)
-            if selected in [ 'r', '' ]:
-                continue
-
-            if int(selected) > len(mount_points) or int(selected) < 0:
-                raise RuntimeError
-        
-            point = mount_points[selected]
-            point.toggle()
-        return
-
-    if len(argv) >= 2:
-        command = argv[1]
-
-    if len(argv) >= 3:
-        arg = argv[2]
-
-    execute(o, command, arg)
-
-if __name__ == "__main__":
-    # execute only if run as a script
-    main(sys.argv)
