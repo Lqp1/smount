@@ -16,7 +16,7 @@ class MountType:
         self.__run(cmd.substitute(src=src, target=target))
 
     def unmount(self, src, target):
-        cmd = string.Template(self.config['mount'])
+        cmd = string.Template(self.config['umount'])
         self.__run(cmd.substitute(src=src, target=target))
 
     def __run(self, cmd):
