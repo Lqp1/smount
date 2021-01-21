@@ -67,13 +67,17 @@ class SerialMounter:
             return [path]
         if not os.path.isdir(path):
             return []
-        return [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))].sort()
+        files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        files.sort()
+        return files
 
     def load_types(self, _path):
         for path in self.get_files(_path):
             with open(path, 'r') as stream:
                 try:
                     config = yaml.safe_load(stream)
+                    if 'mount_types' not in config:
+                        continue
                     for i in config['mount_types']:
                         name = next(iter(i))
                         self.mount_types[name] = MountType(name, i[name])
@@ -85,6 +89,8 @@ class SerialMounter:
             with open(path, 'r') as stream:
                 try:
                     config = yaml.safe_load(stream)
+                    if 'mounts' not in config:
+                        continue
                     for i in config['mounts']:
                         name = next(iter(i))
                         mean = self.mount_types[i[name]['type']]
