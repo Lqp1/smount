@@ -55,7 +55,7 @@ def main(argv):
             if int(selected) > len(mount_points) or int(selected) < 0:
                 raise RuntimeError
         
-            point = mount_points[selected]
+            point = mount_points[int(selected)]
             point.toggle()
         return
 
