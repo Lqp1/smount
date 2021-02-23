@@ -43,6 +43,13 @@ mounts:
         target: "/media/public"
 ```
 
+Variables that can be used:
+- $src
+- $target
+- $login
+- $uid
+- $gid
+
 Mount destinations should exist and have right permissions on it.
 
 ### Running as interactive
@@ -63,7 +70,7 @@ Mount destinations should exist and have right permissions on it.
 - [ ] Support udev for local disks matching
 - [ ] Build a curses interface, for fun and profit
 - [ ] Add a `variables` set in configuration for user defined variables
-- [ ] Propose automatically defined variables, as hostname, user login, ...
+- [X] Propose automatically defined variables, as hostname, user login, ...
 - [ ] Propose wildcards in source mountpoints to automatically select a file
       without full name
 

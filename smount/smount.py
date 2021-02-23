@@ -8,13 +8,22 @@ class MountType:
         self.config = config
         self.name = name
 
+    def args(self, src, target):
+        return {
+                'src' : src,
+                'target' : target,
+                'uid' : os.getuid(),
+                'gid' : os.getgid(),
+                'login' : os.getlogin()
+                }
+
     def mount(self, src, target):
         cmd = string.Template(self.config['mount'])
-        self.__run(cmd.substitute(src=src, target=target))
+        self.__run(cmd.substitute(**self.args(src, target)))
 
     def unmount(self, src, target):
         cmd = string.Template(self.config['umount'])
-        self.__run(cmd.substitute(src=src, target=target))
+        self.__run(cmd.substitute(**self.args(src, target)))
 
     def __run(self, cmd):
         os.system(cmd)
