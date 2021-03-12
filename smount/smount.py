@@ -2,6 +2,7 @@ import yaml
 import string
 import os
 import re
+import glob
 
 class MountType:
     def __init__(self, name, config):
@@ -34,14 +35,33 @@ class MountPoint:
         self.name = name
         self.mean = mean
 
+    def expand(self, path):
+        t = self.config.get("expand")
+        if t == None:
+            return path
+        if t == 'last-alpha':
+            files = [f for f in glob.glob(path) if os.path.isfile(f) ]
+            list.sort(files)
+            return files[-1]
+        if t == 'last-ctime':
+            files = [f for f in glob.glob(path) if os.path.isfile(f) ]
+            files.sort(key=os.path.getctime)
+            return files[-1]
+
+        raise RuntimeError("Unknown expansion type")
+
     def mount(self):
         target = self.config['target']
         if not os.path.isdir(target):
             print(f"{self.name}: target {target} is not ready.")
-        self.mean.mount(self.config['src'], target)
+        self.mean.mount(
+                self.expand(self.config['src']),
+                target)
 
     def unmount(self):
-        self.mean.unmount(self.config['src'], self.config['target'])
+        self.mean.unmount(
+                self.expand(self.config['src']),
+                self.config['target'])
 
     def ismounted(self):
         mounts = None

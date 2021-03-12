@@ -35,7 +35,8 @@ mount_types:
 mounts:
     - secrets:
         type: "veracrypt"
-        src: "~/Documents/encrypted.hc"
+        src: "~/Documents/encrypted*.hc"
+        expand: "last-ctime"
         target: "/media/secret"
     - public:
         type: "ssh"
@@ -49,6 +50,10 @@ Variables that can be used:
 - $login
 - $uid
 - $gid
+
+Available expansions:
+- last-ctime : last file in the expanded list
+- last-alpha : last file in alpha order in expanded list
 
 Mount destinations should exist and have right permissions on it.
 
@@ -71,7 +76,7 @@ Mount destinations should exist and have right permissions on it.
 - [ ] Build a curses interface, for fun and profit
 - [ ] Add a `variables` set in configuration for user defined variables
 - [X] Propose automatically defined variables, as hostname, user login, ...
-- [ ] Propose wildcards in source mountpoints to automatically select a file
+- [X] Propose wildcards in source mountpoints to automatically select a file
       without full name
 
 
