@@ -71,7 +71,7 @@ Mount destinations should exist and have right permissions on it.
 
 ## Screenshot
 
-![Screenshot](https://github.com/lqp1/smount/blob/master/doc/screenshot.png?raw=true)
+![Screenshot](https://github.com/lqp1/smount/blob/main/doc/screenshot.png?raw=true)
 
 ## Improvement list
 
