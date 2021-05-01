@@ -7,7 +7,7 @@ mount/unmount remote file systems. This is a very simple project for now, there
 is no support of udev rules or anything "complex", just the base to support my
 use case.
 
-There is no particular requirement, using python 3.8 or greature should be
+There is no particular requirement, using python 3.8 or greater should be
 sufficient.
 
 ## Usage
@@ -68,6 +68,10 @@ Mount destinations should exist and have right permissions on it.
 ```bash
 ./smount-bin help
 ```
+
+## Screenshot
+
+![Screenshot](https://github.com/lqp1/smount/blob/master/doc/screenshot.png?raw=true)
 
 ## Improvement list
 
