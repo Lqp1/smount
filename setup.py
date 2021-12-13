@@ -20,6 +20,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.8',
+    install_requires=[
+        'pyyml',
+    ],
     scripts=['smount-bin'],
 )
 
