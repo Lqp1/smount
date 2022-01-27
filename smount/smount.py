@@ -68,7 +68,8 @@ class MountPoint:
         with open("/proc/mounts", "r") as stream:
             mounts = stream.readlines()
         for i in mounts:
-            if len(re.findall(f" {self.config['target']} ", i.strip())) >= 1:
+            mountpoint = i.split(' ')[1]
+            if os.path.abspath(mountpoint) == os.path.abspath(self.config['target']):
                 return True
         return False
 
