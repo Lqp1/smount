@@ -19,7 +19,7 @@ def execute(context, command, arg):
         mount.mount()
     elif command == "help":
         print("Available commands: list, mount, unmount")
-    elif command == "unmount":
+    elif command in [ "umount", "unmount"]:
         mount = context.get(arg)
         if mount is None:
             print(f"{command}: '{arg}' could not be found")
@@ -41,7 +41,7 @@ def main(argv):
         while True:
             for i in range(len(mount_points)):
                 print(f"{i} - {mount_points[i]}")
-        
+
             try:
                 selected = input("select> ")
             except KeyboardInterrupt:

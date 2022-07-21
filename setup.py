@@ -23,6 +23,6 @@ setuptools.setup(
     install_requires=[
         'pyyml',
     ],
-    scripts=['smount-bin'],
+    scripts=['bin/smount'],
 )
 
