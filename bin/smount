@@ -45,7 +45,9 @@ def main(argv):
             try:
                 selected = input("select> ")
             except KeyboardInterrupt:
-                selected = 'q'
+                selected = 'q' # CTRL-C
+            except EOFError:
+                selected = 'q' # CTRL-D
 
             if selected == 'q':
                 sys.exit(0)
