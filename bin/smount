@@ -3,13 +3,13 @@
 import sys
 from smount.smount import SerialMounter
 
-def execute(context, command, arg):
+def execute(mounter, command, arg):
     if command == "list":
-        available = context.get_mount_points()
+        available = mounter.get_mount_points()
         for i in available:
             print(f"{i}")
     elif command == "mount":
-        mount = context.get(arg)
+        mount = mounter.get(arg)
         if mount is None:
             print(f"{command}: '{arg}' could not be found")
             return
@@ -20,7 +20,7 @@ def execute(context, command, arg):
     elif command == "help":
         print("Available commands: list, mount, unmount")
     elif command in [ "umount", "unmount"]:
-        mount = context.get(arg)
+        mount = mounter.get(arg)
         if mount is None:
             print(f"{command}: '{arg}' could not be found")
             return
@@ -32,12 +32,12 @@ def execute(context, command, arg):
         print(f"Unknown command {command}")
 
 def main(argv):
-    o = SerialMounter()
+    mounter = SerialMounter()
     command = None
     arg = None
 
     if len(argv) == 1:
-        mount_points = o.get_mount_points()
+        mount_points = mounter.get_mount_points()
         while True:
             for i in range(len(mount_points)):
                 print(f"{i} - {mount_points[i]}")
@@ -54,7 +54,7 @@ def main(argv):
 
             if int(selected) > len(mount_points) or int(selected) < 0:
                 raise RuntimeError
-        
+
             point = mount_points[int(selected)]
             point.toggle()
         return
@@ -65,7 +65,7 @@ def main(argv):
     if len(argv) >= 3:
         arg = argv[2]
 
-    execute(o, command, arg)
+    execute(mounter, command, arg)
 
 if __name__ == "__main__":
     # execute only if run as a script
