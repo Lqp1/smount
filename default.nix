@@ -7,7 +7,7 @@ let
 
     buildPythonApplication rec {
       pname = "smount";
-      version = "0.3";
+      version = "0.4";
 
       propagatedBuildInputs = [ pyyaml ];
 
@@ -18,7 +18,7 @@ let
 
       src = fetchurl {
         url= "https://github.com/Lqp1/smount/archive/refs/tags/v${version}.tar.gz";
-        sha256 = "8f9f44408394b505a92703e312676865394816a270e64c7a50b92d8fc630aed0";
+        sha256 = "e85cecb8f8491aff8cf67976c955d866b639efc01854e385012ba5a81150dfbf";
       };
     };
 
