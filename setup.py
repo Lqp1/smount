@@ -25,4 +25,3 @@ setuptools.setup(
     ],
     scripts=['bin/smount'],
 )
-

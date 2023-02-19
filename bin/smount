@@ -3,6 +3,7 @@
 import sys
 from smount.smount import SerialMounter
 
+
 def execute(mounter, command, arg):
     if command == "list":
         available = mounter.get_mount_points()
@@ -19,7 +20,7 @@ def execute(mounter, command, arg):
         mount.mount()
     elif command == "help":
         print("Available commands: list, mount, unmount")
-    elif command in [ "umount", "unmount"]:
+    elif command in ["umount", "unmount"]:
         mount = mounter.get(arg)
         if mount is None:
             print(f"{command}: '{arg}' could not be found")
@@ -31,6 +32,7 @@ def execute(mounter, command, arg):
     else:
         print(f"Unknown command {command}")
 
+
 def main(argv):
     mounter = SerialMounter()
     command = None
@@ -39,19 +41,19 @@ def main(argv):
     if len(argv) == 1:
         mount_points = mounter.get_mount_points()
         while True:
-            for i in range(len(mount_points)):
-                print(f"{i} - {mount_points[i]}")
+            for i, mount_point in enumerate(mount_points):
+                print(f"{i} - {mount_point}")
 
             try:
                 selected = input("select> ")
             except KeyboardInterrupt:
-                selected = 'q' # CTRL-C
+                selected = 'q'  # CTRL-C
             except EOFError:
-                selected = 'q' # CTRL-D
+                selected = 'q'  # CTRL-D
 
             if selected == 'q':
                 sys.exit(0)
-            if selected in [ 'r', '' ]:
+            if selected in ['r', '']:
                 continue
 
             if int(selected) > len(mount_points) or int(selected) < 0:
@@ -68,6 +70,7 @@ def main(argv):
         arg = argv[2]
 
     execute(mounter, command, arg)
+
 
 if __name__ == "__main__":
     # execute only if run as a script
