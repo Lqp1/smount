@@ -84,7 +84,7 @@ class MountPoint:
     def __str__(self):
         logstr = f"""
         {self.name} : {self.config['src']} => {self.config['target']} [{self.config['type']}]
-        """
+        """.strip(" \n")
         if self.ismounted():
             return f"🟢 {logstr}"
         return f"🔴 {logstr}"
