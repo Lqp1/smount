@@ -1,8 +1,8 @@
 import glob
 import os
 import string
+import itertools
 import yaml
-
 
 class MountType:
     def __init__(self, name, config):
@@ -91,9 +91,14 @@ class MountPoint:
 
 
 class SerialMounter:
-    CONFIGS = ["/etc/smount", "~/.config/smount", "~/.smount"]
+    DEFAULT_CONFIG_PATHS = ["/etc/smount", "~/.config/smount", "~/.smount"]
 
-    def __init__(self):
+    def __init__(self, config = None):
+        if config is None:
+            self.config = self.parse_files(self.DEFAULT_CONFIG_PATHS)
+        else:
+            self.config = config
+
         self.refresh_config()
 
     def get_files(self, path):
@@ -105,41 +110,45 @@ class SerialMounter:
             path) if os.path.isfile(os.path.join(path, f))])
         return files
 
-    def load_types(self, _path):
-        for path in self.get_files(_path):
-            with open(path, 'r', encoding="utf-8") as stream:
-                try:
-                    config = yaml.safe_load(stream)
-                    if 'mount_types' not in config:
-                        continue
-                    for i in config['mount_types']:
-                        name = next(iter(i))
-                        self.mount_types[name] = MountType(name, i[name])
-                except yaml.YAMLError as exc:
-                    print(exc)
+    def parse_files(self, paths):
+        files = [ self.get_files(os.path.expanduser(path)) for path in paths ]
+        configs = []
+        for file in list(itertools.chain(*files)):
+            with open(file, 'r', encoding="utf-8") as stream:
+                configs.append(stream.read())
+        return configs
 
-    def load_mounts(self, _path):
-        for path in self.get_files(_path):
-            with open(path, 'r', encoding="utf-8") as stream:
-                try:
-                    config = yaml.safe_load(stream)
-                    if 'mounts' not in config:
-                        continue
-                    for i in config['mounts']:
-                        name = next(iter(i))
-                        mean = self.mount_types[i[name]['type']]
-                        self.mount_points.append(
-                            MountPoint(name, i[name], mean))
-                except yaml.YAMLError as exc:
-                    print(exc)
+    def load_types(self):
+        for chunk in self.config:
+            try:
+                parsed = yaml.safe_load(chunk)
+                if 'mount_types' not in parsed:
+                    continue
+                for i in parsed['mount_types']:
+                    name = next(iter(i))
+                    self.mount_types[name] = MountType(name, i[name])
+            except yaml.YAMLError as exc:
+                print(exc)
+
+    def load_mounts(self):
+        for chunk in self.config:
+            try:
+                parsed = yaml.safe_load(chunk)
+                if 'mounts' not in parsed:
+                    continue
+                for i in parsed['mounts']:
+                    name = next(iter(i))
+                    mean = self.mount_types[i[name]['type']]
+                    self.mount_points.append(
+                        MountPoint(name, i[name], mean))
+            except yaml.YAMLError as exc:
+                print(exc)
 
     def refresh_config(self):
         self.mount_types = {}
         self.mount_points = []
-        for config in self.CONFIGS:
-            self.load_types(os.path.expanduser(config))
-        for config in self.CONFIGS:
-            self.load_mounts(os.path.expanduser(config))
+        self.load_types()
+        self.load_mounts()
 
     def get_mount_points(self):
         return self.mount_points

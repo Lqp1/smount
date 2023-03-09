@@ -60,13 +60,13 @@ Mount destinations should exist and have right permissions on it.
 ### Running as interactive
 
 ```bash
-./smount-bin
+./smount
 ```
 
 ### Running as cli
 
 ```bash
-./smount-bin help
+./smount help
 ```
 
 ## Screenshot
