@@ -1,13 +1,13 @@
 let
-  nixpkgs = fetchTarball "channel:nixos-20.03";
+  nixpkgs = fetchTarball "channel:nixos-22.11";
   pkgs = import nixpkgs {};
 
-  recipe = { python38, fetchurl }:
-    with python38.pkgs;
+  recipe = { python39, fetchurl }:
+    with python39.pkgs;
 
     buildPythonApplication rec {
       pname = "smount";
-      version = "0.4";
+      version = "0.5";
 
       propagatedBuildInputs = [ pyyaml ];
 
@@ -18,7 +18,7 @@ let
 
       src = fetchurl {
         url= "https://github.com/Lqp1/smount/archive/refs/tags/v${version}.tar.gz";
-        sha256 = "e85cecb8f8491aff8cf67976c955d866b639efc01854e385012ba5a81150dfbf";
+        sha256 = "02fa0d88af23db8783cade056e8b8f9235c0aacc05d0ab97731e268fe131d8ce";
       };
     };
 
