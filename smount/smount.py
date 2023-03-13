@@ -5,11 +5,11 @@ import itertools
 import yaml
 
 class MountType:
-    def __init__(self, name, config):
+    def __init__(self, name: str, config: dict):
         self.config = config
         self.name = name
 
-    def args(self, src, target):
+    def args(self, src: str, target:str) -> dict:
         return {
             'src': src,
             'target': target,
@@ -18,25 +18,25 @@ class MountType:
             'login': os.getlogin()
         }
 
-    def mount(self, src, target):
+    def mount(self, src: str, target: str) -> bool:
         cmd = string.Template(self.config['mount'])
-        self.__run(cmd.substitute(**self.args(src, target)))
+        return self.__run(cmd.substitute(**self.args(src, target)))
 
-    def unmount(self, src, target):
+    def unmount(self, src:str, target:str) -> bool:
         cmd = string.Template(self.config['umount'])
-        self.__run(cmd.substitute(**self.args(src, target)))
+        return self.__run(cmd.substitute(**self.args(src, target)))
 
-    def __run(self, cmd):
-        os.system(cmd)
+    def __run(self, cmd:str) -> bool:
+        return os.system(cmd) == 0
 
 
 class MountPoint:
-    def __init__(self, name, config, mean):
+    def __init__(self, name: str, config: dict, mean: MountType):
         self.config = config
         self.name = name
         self.mean = mean
 
-    def expand(self, path):
+    def expand(self, path:str) -> str:
         expand_type = self.config.get("expand")
         if expand_type is None:
             return path
@@ -51,20 +51,20 @@ class MountPoint:
 
         raise RuntimeError("Unknown expansion type")
 
-    def mount(self):
+    def mount(self) -> bool:
         target = self.config['target']
         if not os.path.isdir(target):
-            print(f"{self.name}: target {target} is not ready.")
-        self.mean.mount(
+            raise RuntimeError(f"{self.name}: target {target} is not ready.")
+        return self.mean.mount(
             self.expand(self.config['src']),
             target)
 
-    def unmount(self):
-        self.mean.unmount(
-            self.expand(self.config['src']),
-            self.config['target'])
+    def unmount(self) -> bool:
+        return self.mean.unmount(
+                self.expand(self.config['src']),
+                self.config['target'])
 
-    def ismounted(self):
+    def ismounted(self) -> bool:
         mounts = None
         with open("/proc/mounts", "r", encoding="utf-8") as stream:
             mounts = stream.readlines()
@@ -75,11 +75,10 @@ class MountPoint:
                 return True
         return False
 
-    def toggle(self):
+    def toggle(self) -> bool:
         if self.ismounted():
-            self.unmount()
-        else:
-            self.mount()
+            return self.unmount()
+        return self.mount()
 
     def __str__(self):
         logstr = f"""
@@ -101,7 +100,7 @@ class SerialMounter:
 
         self.refresh_config()
 
-    def get_files(self, path):
+    def get_files(self, path: str) -> list[str]:
         if os.path.isfile(path):
             return [path]
         if not os.path.isdir(path):
@@ -110,7 +109,7 @@ class SerialMounter:
             path) if os.path.isfile(os.path.join(path, f))])
         return files
 
-    def parse_files(self, paths):
+    def parse_files(self, paths: list[str]) -> list[str]:
         files = [ self.get_files(os.path.expanduser(path)) for path in paths ]
         configs = []
         for file in list(itertools.chain(*files)):
@@ -128,7 +127,7 @@ class SerialMounter:
                     name = next(iter(i))
                     self.mount_types[name] = MountType(name, i[name])
             except yaml.YAMLError as exc:
-                print(exc)
+                raise RuntimeError("Could not load config properly: " + exc) from exc
 
     def load_mounts(self):
         for chunk in self.config:
@@ -142,18 +141,18 @@ class SerialMounter:
                     self.mount_points.append(
                         MountPoint(name, i[name], mean))
             except yaml.YAMLError as exc:
-                print(exc)
+                raise RuntimeError("Could not load config properly: " + exc) from exc
 
-    def refresh_config(self):
+    def refresh_config(self) -> None:
         self.mount_types = {}
         self.mount_points = []
         self.load_types()
         self.load_mounts()
 
-    def get_mount_points(self):
+    def get_mount_points(self) -> list[MountPoint]:
         return self.mount_points
 
-    def get(self, name):
+    def get(self, name:str) -> MountPoint:
         matching = list(filter(lambda x: x.name == name, self.mount_points))
         if len(matching) == 0:
             return None

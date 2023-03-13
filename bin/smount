@@ -3,34 +3,53 @@
 import sys
 from smount.smount import SerialMounter
 
+def log(command, arg, message):
+    print(f"{command} of '{arg}': {message}")
 
-def execute(mounter, command, arg):
+# pylint: disable-next=too-many-branches
+def execute(mounter, command, arg) -> int:
+    ret = 99
     if command == "list":
         available = mounter.get_mount_points()
         for i in available:
             print(f"{i}")
+        ret = 0
     elif command == "mount":
         mount = mounter.get(arg)
         if mount is None:
-            print(f"{command}: '{arg}' could not be found")
-            return
-        if mount.ismounted():
-            print(f"{command}: '{arg}' is already mounted")
-            return
-        mount.mount()
+            log(command, arg, 'could not be found')
+            ret = 127
+        elif mount.ismounted():
+            log(command, arg, 'is already mounted')
+            ret = 0
+        elif mount.mount():
+            log(command, arg, 'success')
+            ret = 0
+        else:
+            log(command, arg, 'failed to mount')
+            ret = 1
     elif command == "help":
         print("Available commands: list, mount, unmount")
+        ret = 0
     elif command in ["umount", "unmount"]:
         mount = mounter.get(arg)
         if mount is None:
-            print(f"{command}: '{arg}' could not be found")
-            return
-        if not mount.ismounted():
-            print(f"{command}: '{arg}' is not mounted")
-            return
-        mount.unmount()
+            log(command, arg, 'could not be found')
+            ret = 127
+        elif not mount.ismounted():
+            log(command, arg, 'is not mounted')
+            ret = 0
+        elif mount.unmount():
+            log(command, arg, 'success')
+            ret = 0
+        else:
+            log(command, arg, 'failed to unmount')
+            ret = 1
     else:
         print(f"Unknown command {command}")
+        ret = 2
+
+    return ret
 
 
 def main(argv):
@@ -69,7 +88,7 @@ def main(argv):
     if len(argv) >= 3:
         arg = argv[2]
 
-    execute(mounter, command, arg)
+    sys.exit(execute(mounter, command, arg))
 
 
 if __name__ == "__main__":
