@@ -25,23 +25,23 @@ Configuration files follow YAML syntax; for example:
 
 ```yaml
 mount_types:
-    - veracrypt:
-        mount: "veracrypt --text -mro $src $target"
-        umount: "veracrypt -d $target"
-    - ssh:
-        mount: "sshfs login@my_remote.lan:$src $target"
-        umount: "umount $target"
+    veracrypt:
+      mount: "veracrypt --text -mro $src $target"
+      umount: "veracrypt -d $target"
+    ssh:
+      mount: "sshfs login@my_remote.lan:$src $target"
+      umount: "umount $target"
 
 mounts:
-    - secrets:
-        type: "veracrypt"
-        src: "~/Documents/encrypted*.hc"
-        expand: "last-ctime"
-        target: "/media/secret"
-    - public:
-        type: "ssh"
-        src: "/public"
-        target: "/media/public"
+    secrets:
+      type: "veracrypt"
+      src: "~/Documents/encrypted*.hc"
+      expand: "last-ctime"
+      target: "/media/secret"
+    public:
+      type: "ssh"
+      src: "/public"
+      target: "/media/public"
 ```
 
 Variables that can be used:
