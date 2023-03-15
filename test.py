@@ -69,10 +69,11 @@ class TestMountPoint(pyfakefs.fake_filesystem_unittest.TestCase):
         test.mount()
 
     def test_mount_expanded(self):
+        src = "/one/*"
         test = MountPoint("test",
-                          {"src":"/one/*", "target":"/three", "expand": "last-alpha"},
+                          {"src":src, "target":"/three", "expand": "last-alpha"},
                           self.nil_mount_type)
-        self.assertEqual(test.expand(test.config['src']), "/one/c")
+        self.assertEqual(test.expand(src), "/one/c")
         self.assertEqual(test.mount(), True)
 
 if __name__ == '__main__':

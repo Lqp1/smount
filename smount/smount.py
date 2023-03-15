@@ -6,10 +6,19 @@ import yaml
 
 class MountType:
     def __init__(self, name: str, config: dict):
-        self.config = config
+        self._config = config
         self.name = name
 
-    def args(self, src: str, target:str) -> dict:
+    def mount(self, src: str, target: str) -> bool:
+        cmd = string.Template(self._config['mount'])
+        return self.__run(cmd.substitute(**self.__args(src, target)))
+
+    def unmount(self, src:str, target:str) -> bool:
+        cmd = string.Template(self._config['umount'])
+        return self.__run(cmd.substitute(**self.__args(src, target)))
+
+    @staticmethod
+    def __args(src: str, target:str) -> dict:
         return {
             'src': src,
             'target': target,
@@ -18,26 +27,19 @@ class MountType:
             'login': os.getlogin()
         }
 
-    def mount(self, src: str, target: str) -> bool:
-        cmd = string.Template(self.config['mount'])
-        return self.__run(cmd.substitute(**self.args(src, target)))
-
-    def unmount(self, src:str, target:str) -> bool:
-        cmd = string.Template(self.config['umount'])
-        return self.__run(cmd.substitute(**self.args(src, target)))
-
-    def __run(self, cmd:str) -> bool:
+    @staticmethod
+    def __run(cmd:str) -> bool:
         return os.system(cmd) == 0
 
 
 class MountPoint:
     def __init__(self, name: str, config: dict, mean: MountType):
-        self.config = config
+        self._config = config
+        self._mean = mean
         self.name = name
-        self.mean = mean
 
     def expand(self, path:str) -> str:
-        expand_type = self.config.get("expand")
+        expand_type = self._config.get("expand")
         if expand_type is None:
             return path
         if expand_type == 'last-alpha':
@@ -52,17 +54,17 @@ class MountPoint:
         raise RuntimeError("Unknown expansion type")
 
     def mount(self) -> bool:
-        target = self.config['target']
+        target = self._config['target']
         if not os.path.isdir(target):
             raise RuntimeError(f"{self.name}: target {target} is not ready.")
-        return self.mean.mount(
-            self.expand(self.config['src']),
+        return self._mean.mount(
+            self.expand(self._config['src']),
             target)
 
     def unmount(self) -> bool:
-        return self.mean.unmount(
-                self.expand(self.config['src']),
-                self.config['target'])
+        return self._mean.unmount(
+                self.expand(self._config['src']),
+                self._config['target'])
 
     def ismounted(self) -> bool:
         mounts = None
@@ -71,7 +73,7 @@ class MountPoint:
         for i in mounts:
             mountpoint = i.split(' ')[1]
             if os.path.abspath(mountpoint) == os.path.abspath(
-                    self.config['target']):
+                    self._config['target']):
                 return True
         return False
 
@@ -82,7 +84,7 @@ class MountPoint:
 
     def __str__(self):
         logstr = f"""
-        {self.name} : {self.config['src']} => {self.config['target']} [{self.config['type']}]
+        {self.name} : {self._config['src']} => {self._config['target']} [{self._config['type']}]
         """.strip(" \n")
         if self.ismounted():
             return f"🟢 {logstr}"
@@ -94,13 +96,14 @@ class SerialMounter:
 
     def __init__(self, config = None):
         if config is None:
-            self.config = self.parse_files(self.DEFAULT_CONFIG_PATHS)
+            self._config = self._parse_files(self.DEFAULT_CONFIG_PATHS)
         else:
-            self.config = config
+            self._config = config
 
-        self.refresh_config()
+        self._refresh_config()
 
-    def get_files(self, path: str) -> list[str]:
+    @staticmethod
+    def _get_files(path: str) -> list[str]:
         if os.path.isfile(path):
             return [path]
         if not os.path.isdir(path):
@@ -109,51 +112,52 @@ class SerialMounter:
             path) if os.path.isfile(os.path.join(path, f))])
         return files
 
-    def parse_files(self, paths: list[str]) -> list[str]:
-        files = [ self.get_files(os.path.expanduser(path)) for path in paths ]
+    @staticmethod
+    def _parse_files(paths: list[str]) -> list[str]:
+        files = [ SerialMounter._get_files(os.path.expanduser(path)) for path in paths ]
         configs = []
         for file in list(itertools.chain(*files)):
             with open(file, 'r', encoding="utf-8") as stream:
                 configs.append(stream.read())
         return configs
 
-    def load_types(self):
-        for chunk in self.config:
+    def _load_types(self):
+        for chunk in self._config:
             try:
                 parsed = yaml.safe_load(chunk)
                 if 'mount_types' not in parsed:
                     continue
                 for i in parsed['mount_types']:
                     name = next(iter(i))
-                    self.mount_types[name] = MountType(name, i[name])
+                    self._mount_types[name] = MountType(name, i[name])
             except yaml.YAMLError as exc:
                 raise RuntimeError("Could not load config properly: " + exc) from exc
 
-    def load_mounts(self):
-        for chunk in self.config:
+    def _load_mounts(self):
+        for chunk in self._config:
             try:
                 parsed = yaml.safe_load(chunk)
                 if 'mounts' not in parsed:
                     continue
                 for i in parsed['mounts']:
                     name = next(iter(i))
-                    mean = self.mount_types[i[name]['type']]
-                    self.mount_points.append(
+                    mean = self._mount_types[i[name]['type']]
+                    self._mount_points.append(
                         MountPoint(name, i[name], mean))
             except yaml.YAMLError as exc:
                 raise RuntimeError("Could not load config properly: " + exc) from exc
 
-    def refresh_config(self) -> None:
-        self.mount_types = {}
-        self.mount_points = []
-        self.load_types()
-        self.load_mounts()
+    def _refresh_config(self) -> None:
+        self._mount_types = {}
+        self._mount_points = []
+        self._load_types()
+        self._load_mounts()
 
     def get_mount_points(self) -> list[MountPoint]:
-        return self.mount_points
+        return self._mount_points
 
     def get(self, name:str) -> MountPoint:
-        matching = list(filter(lambda x: x.name == name, self.mount_points))
+        matching = list(filter(lambda x: x.name == name, self._mount_points))
         if len(matching) == 0:
             return None
         return matching[0]

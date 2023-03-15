@@ -17,13 +17,13 @@ def execute(mounter, command, arg) -> int:
     elif command == "mount":
         mount = mounter.get(arg)
         if mount is None:
-            log(command, arg, 'could not be found')
+            log(command, arg, 'mountpoint could not be found with that name')
             ret = 127
         elif mount.ismounted():
             log(command, arg, 'is already mounted')
             ret = 0
         elif mount.mount():
-            log(command, arg, 'success')
+            log(command, arg, 'success 🎉')
             ret = 0
         else:
             log(command, arg, 'failed to mount')
@@ -34,19 +34,19 @@ def execute(mounter, command, arg) -> int:
     elif command in ["umount", "unmount"]:
         mount = mounter.get(arg)
         if mount is None:
-            log(command, arg, 'could not be found')
+            log(command, arg, 'mountpoint could not be found with that name')
             ret = 127
         elif not mount.ismounted():
-            log(command, arg, 'is not mounted')
+            log(command, arg, 'is not mounted already')
             ret = 0
         elif mount.unmount():
-            log(command, arg, 'success')
+            log(command, arg, 'success 🎉')
             ret = 0
         else:
             log(command, arg, 'failed to unmount')
             ret = 1
     else:
-        log(command, arg, "unknown command")
+        log(command, arg, "unknown command was used")
         ret = 2
 
     return ret
@@ -75,11 +75,15 @@ def main(argv):
             if selected in ['r', '']:
                 continue
 
-            if int(selected) > len(mount_points) or int(selected) < 0:
-                raise RuntimeError
-
-            point = mount_points[int(selected)]
-            point.toggle()
+            try:
+                if int(selected) > len(mount_points) or int(selected) < 0:
+                    print(f"Selection is invalid: '{selected}' is not within range")
+                    continue
+                point = mount_points[int(selected)]
+                if not point.toggle():
+                    print("There was an error processing mount/unmount of the mountpoint")
+            except ValueError:
+                print(f"Selection is invalid: '{selected}' is not an integer")
         return
 
     if len(argv) >= 2:
@@ -92,5 +96,9 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    # execute only if run as a script
-    main(sys.argv)
+    try:
+        # execute only if run as a script
+        main(sys.argv)
+    except RuntimeError as e:
+        print(f"An exception occured: {e}")
+        sys.exit(1)
