@@ -4,34 +4,34 @@ from smount.smount import SerialMounter, MountPoint, MountType
 
 TEST_CONFIG_1 = """
 mount_types:
--   one:
-        mount: echo does nothing
-        umount: echo does nothing neither
+   one:
+       mount: echo does nothing
+       umount: echo does nothing neither
 mounts:
--   m_one:
-        src: /
-        target: /tmp
-        type: one
--   m_two:
-        src: .
-        target: /tmp
-        type: one
+   m_one:
+       src: /
+       target: /tmp
+       type: one
+   m_two:
+       src: .
+       target: /tmp
+       type: one
 """
 
 TEST_CONFIG_2 = """
 mount_types:
--   one:
+   one:
         mount: echo does nothing
         umount: echo does nothing neither
 mounts:
--   m_one:
-        src: /
-        target: /tmp
-        type: one
--   m_two:
-        src: .
-        target: /tmp
-        type: two
+   m_one:
+       src: /
+       target: /tmp
+       type: one
+   m_two:
+       src: .
+       target: /tmp
+       type: two
 """
 
 class TestSerialMounter(unittest.TestCase):

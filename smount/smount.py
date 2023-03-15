@@ -127,9 +127,8 @@ class SerialMounter:
                 parsed = yaml.safe_load(chunk)
                 if 'mount_types' not in parsed:
                     continue
-                for i in parsed['mount_types']:
-                    name = next(iter(i))
-                    self._mount_types[name] = MountType(name, i[name])
+                for name, config in parsed['mount_types'].items():
+                    self._mount_types[name] = MountType(name, config)
             except yaml.YAMLError as exc:
                 raise RuntimeError("Could not load config properly: " + exc) from exc
 
@@ -139,11 +138,10 @@ class SerialMounter:
                 parsed = yaml.safe_load(chunk)
                 if 'mounts' not in parsed:
                     continue
-                for i in parsed['mounts']:
-                    name = next(iter(i))
-                    mean = self._mount_types[i[name]['type']]
+                for name, config in parsed['mounts'].items():
+                    mean = self._mount_types[config['type']]
                     self._mount_points.append(
-                        MountPoint(name, i[name], mean))
+                        MountPoint(name, config, mean))
             except yaml.YAMLError as exc:
                 raise RuntimeError("Could not load config properly: " + exc) from exc
 
