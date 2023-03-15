@@ -4,7 +4,7 @@ import sys
 from smount.smount import SerialMounter
 
 def log(command, arg, message):
-    print(f"{command} of '{arg}': {message}")
+    print(f"Calling {command} with '{arg if arg else 'no argument'}': {message}")
 
 # pylint: disable-next=too-many-branches
 def execute(mounter, command, arg) -> int:
@@ -46,7 +46,7 @@ def execute(mounter, command, arg) -> int:
             log(command, arg, 'failed to unmount')
             ret = 1
     else:
-        print(f"Unknown command {command}")
+        log(command, arg, "unknown command")
         ret = 2
 
     return ret
