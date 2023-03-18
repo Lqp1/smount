@@ -7,9 +7,11 @@ let
 
     buildPythonApplication rec {
       pname = "smount";
-      version = "0.5";
+      version = "0.7";
 
       propagatedBuildInputs = [ pyyaml ];
+      nativeCheckInputs = [ pyfakefs ];
+      doCheck = false; # To be fixed
 
       prePatch = ''
           substituteInPlace setup.py \
@@ -18,7 +20,7 @@ let
 
       src = fetchurl {
         url= "https://github.com/Lqp1/smount/archive/refs/tags/v${version}.tar.gz";
-        sha256 = "02fa0d88af23db8783cade056e8b8f9235c0aacc05d0ab97731e268fe131d8ce";
+        sha256 = "cfdac304b4ab66068b2e0d0fe04b1ed24716148db8deab1790a9ba911186390e";
       };
     };
 

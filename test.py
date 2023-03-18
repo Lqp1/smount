@@ -53,7 +53,7 @@ class TestMountPoint(pyfakefs.fake_filesystem_unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.setUpClassPyfakefs()
-        cls.nil_mount_type = MountType("nop", {"mount": "/bin/true", "umount":"/bin/true"})
+        cls.nil_mount_type = MountType("nop", {"mount": "true", "umount":"true"})
         cls.fake_fs().create_dir("/one")
         cls.fake_fs().create_file("/one/a")
         cls.fake_fs().create_file("/one/b")

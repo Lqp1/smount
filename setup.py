@@ -23,5 +23,8 @@ setuptools.setup(
     install_requires=[
         'pyyml',
     ],
+    tests_require=[
+        'pyfakefs',
+    ],
     scripts=['bin/smount'],
 )
