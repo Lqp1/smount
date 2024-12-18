@@ -2,6 +2,7 @@ import glob
 import os
 import string
 import itertools
+import subprocess
 import yaml
 
 class MountType:
@@ -67,11 +68,9 @@ class MountPoint:
                 self._config['target'])
 
     def ismounted(self) -> bool:
-        mounts = None
-        with open("/proc/mounts", "r", encoding="utf-8") as stream:
-            mounts = stream.readlines()
+        mounts = subprocess.check_output(["mount"]).decode("utf-8").splitlines()
         for i in mounts:
-            mountpoint = i.split(' ')[1]
+            mountpoint = i.split(' ')[2]
             if os.path.abspath(mountpoint) == os.path.abspath(
                     self._config['target']):
                 return True

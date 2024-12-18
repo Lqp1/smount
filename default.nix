@@ -1,5 +1,5 @@
 let
-  nixpkgs = fetchTarball "channel:nixos-22.11";
+  nixpkgs = fetchTarball "channel:nixos-24.11";
   pkgs = import nixpkgs {};
 
   recipe = { python39, fetchurl }:
