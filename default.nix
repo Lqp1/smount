@@ -1,7 +1,6 @@
 let
   nixpkgs = fetchTarball {
       url = "channel:nixos-24.11";
-      sha256 = "sha256:0nvd0nfv7ayw4gn916r4bgxk76np6w41w72izich6zvygdn8agwp";
   };
   pkgs = import nixpkgs {};
 
