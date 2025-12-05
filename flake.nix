@@ -16,7 +16,7 @@
           pp = pkgs.python3Packages;
         in
         {
-          ${pkgName} = pp.buildPythonApplication rec {
+          ${pkgName} = pp.buildPythonApplication {
             pname = pkgName;
             src = ./.;
             propagatedBuildInputs = [ pp.pyyaml pp.setuptools];
@@ -24,11 +24,6 @@
             version = "0.8";
             pyproject = true;
             doCheck = false; # To be fixed
-
-            prePatch = ''
-              substituteInPlace setup.py \
-              --replace "pyyml" "pyyaml"
-            '';
           };
         }
       );

@@ -11,13 +11,8 @@ requires-python = ">=3.8"
 authors = [
     {name = "Thomas Langé", email = "thomas.lange.oss@gmail.com"}
 ]
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GPL License",
-    "Operating System :: OS Independent",
-]
 dependencies = [
-    "pyyml",
+    "pyyaml",
 ]
 
 [project.urls]

@@ -14,14 +14,9 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/lqp1/smount",
     packages=setuptools.find_packages(),
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: GPL3 License",
-        "Operating System :: OS Independent",
-    ],
     python_requires='>=3.8',
     install_requires=[
-        'pyyml',
+        'pyyaml',
     ],
     tests_require=[
         'pyfakefs',
