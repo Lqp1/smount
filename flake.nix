@@ -19,9 +19,10 @@
           ${pkgName} = pp.buildPythonApplication rec {
             pname = pkgName;
             src = ./.;
-            propagatedBuildInputs = [ pp.pyyaml ];
+            propagatedBuildInputs = [ pp.pyyaml pp.setuptools];
             nativeCheckInputs = [ pp.pyfakefs ];
             version = "0.8";
+            pyproject = true;
             doCheck = false; # To be fixed
 
             prePatch = ''

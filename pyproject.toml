@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smount"
+version = "0.0.1"
+description = "smount - a mounting manager"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    {name = "Thomas Langé", email = "thomas.lange.oss@gmail.com"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GPL License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pyyml",
+]
+
+[project.urls]
+Homepage = "https://github.com/lqp1/smount"
+
+[project.optional-dependencies]
+test = ["pyfakefs"]
+
+[tool.setuptools]
+packages = ["smount"]
+script-files = ["bin/smount"]
