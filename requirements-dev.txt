@@ -1,4 +1,4 @@
 pyyaml
-pylint
+pylint==4.0.6
 pyfakefs
 pytest
