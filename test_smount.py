@@ -107,7 +107,8 @@ class TestVariables(pyfakefs.fake_filesystem_unittest.TestCase):
         cls.fake_fs().create_file("/one/local_value")
         cls.fake_fs().create_dir("/three")
 
-    def test_variables_loading_and_prompting(self):
+    def test_variables_prompt(self):
+        # pylint: disable=protected-access
         mounter = SerialMounter([TEST_CONFIG_VARIABLES])
         mount = mounter.get('m_one')
         self.assertIsNotNone(mount)
