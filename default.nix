@@ -1,19 +1,21 @@
 let
   nixpkgs = fetchTarball {
-      url = "channel:nixos-24.11";
+      url = "channel:nixpkgs-unstable";
   };
   pkgs = import nixpkgs {};
 
-  recipe = { python312, fetchurl }:
-    with python312.pkgs;
+  recipe = { python3, fetchurl }:
+    with python3.pkgs;
 
     buildPythonApplication rec {
       pname = "smount";
-      version = "0.8";
+      version = "0.9";
+      pyproject = true;
 
       propagatedBuildInputs = [ pyyaml ];
+      nativeBuildInputs = [ setuptools ];
       nativeCheckInputs = [ pyfakefs ];
-      doCheck = false; # To be fixed
+      doCheck = true;
 
       prePatch = ''
           substituteInPlace setup.py \
@@ -22,7 +24,7 @@ let
 
       src = fetchurl {
         url= "https://github.com/Lqp1/smount/archive/refs/tags/v${version}.tar.gz";
-        sha256 = "1a0955aada716d46750a2c16f0829246c8395ca5c33bfe96f3c6d253b52e5974";
+        sha256 = "61828217acb2fe67d7fd54a6fd1685cf91b3d5f549f1e0e0e5e5209c27e88b06";
       };
     };
 

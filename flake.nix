@@ -21,9 +21,9 @@
             src = ./.;
             propagatedBuildInputs = [ pp.pyyaml pp.setuptools];
             nativeCheckInputs = [ pp.pyfakefs ];
-            version = "0.8";
+            version = "0.9";
             pyproject = true;
-            doCheck = false; # To be fixed
+            doCheck = true;
           };
         }
       );
