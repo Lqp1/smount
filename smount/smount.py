@@ -75,6 +75,10 @@ class MountPoint:
         self.prompter = prompter if prompter is not None else input
         self._resolved_cache = {}
 
+    @property
+    def config(self) -> dict:
+        return self._config
+
     def _get_referenced_variables(self) -> set:
         referenced = set()
         referenced.update(self._find_template_variables(self._config.get('src', '')))

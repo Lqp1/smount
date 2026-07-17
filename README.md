@@ -77,7 +77,7 @@ Mount destinations should exist and have right permissions on it.
 
 - [X] Add a logger with several verbosity levels
 - [ ] Support udev for local disks matching
-- [ ] Build a curses interface, for fun and profit
+- [X] Build a curses interface, for fun and profit
 - [X] Add a `variables` set in configuration for user defined variables
 - [X] Propose automatically defined variables, as hostname, user login, ...
 - [X] Propose wildcards in source mountpoints to automatically select a file

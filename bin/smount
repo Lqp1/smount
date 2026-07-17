@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import curses
 import logging
 import argparse
 from smount.smount import SerialMounter
@@ -177,6 +178,130 @@ def run_interactive(mounter):
         if not point.toggle(prompter=prompter_fn):
             print("There was an error processing mount/unmount of the mountpoint")
 
+# pylint: disable=too-many-statements
+def run_tui(mounter):
+    # pylint: disable=too-many-branches,too-many-locals
+    def main_loop(stdscr):
+        try:
+            curses.curs_set(0)
+        except curses.error:
+            pass
+
+        stdscr.keypad(True)
+
+        try:
+            curses.start_color()
+            curses.use_default_colors()
+            curses.init_pair(1, curses.COLOR_GREEN, -1)
+            curses.init_pair(2, curses.COLOR_RED, -1)
+            has_colors = True
+        except curses.error:
+            has_colors = False
+
+        selected_idx = 0
+        message = ""
+
+        while True:
+            stdscr.clear()
+            height, width = stdscr.getmaxyx()
+
+            # Header
+            stdscr.addstr(0, 0, "smount - Mountpoint Manager (TUI)", curses.A_BOLD)
+            stdscr.addstr(1, 0, "[Up/Down] Navigate  [Enter] Toggle  [R] Refresh  [Q] Quit",
+                         curses.A_DIM)
+            stdscr.addstr(2, 0, "-" * (width - 1))
+
+            mount_points = mounter.get_mount_points()
+            if not mount_points:
+                stdscr.addstr(4, 2, "No mountpoints defined.")
+            else:
+                for idx, mp in enumerate(mount_points):
+                    is_mounted = mp.ismounted()
+                    status_indicator = "🟢" if is_mounted else "🔴"
+                    mp_str = (
+                        f" {status_indicator} {mp.name} : "
+                        f"{mp.config.get('src')} => {mp.config.get('target')} "
+                        f"[{mp.config.get('type')}]"
+                    )
+
+                    attr = 0
+                    if idx == selected_idx:
+                        attr |= curses.A_REVERSE
+                    elif has_colors:
+                        if is_mounted:
+                            attr |= curses.color_pair(1)
+                        else:
+                            attr |= curses.color_pair(2)
+
+                    display_str = mp_str[:width - 4]
+                    stdscr.addstr(4 + idx, 2, display_str, attr)
+
+            # Footer
+            if message:
+                stdscr.addstr(height - 2, 0, "-" * (width - 1))
+                stdscr.addstr(height - 1, 0, message[:width - 1], curses.A_BOLD)
+
+            stdscr.refresh()
+
+            try:
+                key = stdscr.getch()
+            except KeyboardInterrupt:
+                break
+
+            if key == ord('q') or key == ord('Q'):
+                break
+            if key == ord('r') or key == ord('R'):
+                mounter.refresh_config()
+                message = "Config refreshed."
+                selected_idx = max(0, min(selected_idx, len(mounter.get_mount_points()) - 1))
+            elif key == curses.KEY_UP:
+                if selected_idx > 0:
+                    selected_idx -= 1
+                    message = ""
+            elif key == curses.KEY_DOWN:
+                if selected_idx < len(mount_points) - 1:
+                    selected_idx += 1
+                    message = ""
+            elif key in [curses.KEY_ENTER, 10, 13]:
+                if not mount_points:
+                    continue
+                point = mount_points[selected_idx]
+
+                def tui_prompter(prompt_text):
+                    try:
+                        curses.curs_set(1)
+                    except curses.error:
+                        pass
+                    h, w = stdscr.getmaxyx()
+                    stdscr.addstr(h - 1, 0, prompt_text[:w - 1])
+                    stdscr.clrtoeol()
+                    stdscr.refresh()
+                    curses.echo()
+                    try:
+                        val = stdscr.getstr(h - 1, len(prompt_text)).decode('utf-8')
+                    except (UnicodeDecodeError, curses.error):
+                        val = ""
+                    curses.noecho()
+                    try:
+                        curses.curs_set(0)
+                    except curses.error:
+                        pass
+                    return val
+
+                message = f"Processing toggle for {point.name}..."
+                stdscr.refresh()
+
+                try:
+                    success = point.toggle(prompter=tui_prompter)
+                    if success:
+                        message = f"Successfully toggled {point.name}."
+                    else:
+                        message = f"Failed to toggle {point.name}."
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    message = f"Error toggling {point.name}: {e}"
+
+    curses.wrapper(main_loop)
+
 def main(argv):
     parser = argparse.ArgumentParser(
         description="smount - A mountpoint Manager",
@@ -189,7 +314,7 @@ def main(argv):
                         help="Quiet mode (only print errors)")
     parser.add_argument("-h", "--help", action="help", help="show this help message and exit")
     parser.add_argument("command", nargs="?",
-                        help="Command: list, mount, unmount, umount, help")
+                        help="Command: list, mount, unmount, umount, tui, help")
     parser.add_argument("arg", nargs="?",
                         help="Argument for command (e.g. mountpoint name)")
 
@@ -200,6 +325,10 @@ def main(argv):
 
     if args.command is None:
         run_interactive(mounter)
+        return
+
+    if args.command == "tui":
+        run_tui(mounter)
         return
 
     sys.exit(execute(mounter, args.command, args.arg))
