@@ -68,6 +68,12 @@ class TestMountPoint(pyfakefs.fake_filesystem_unittest.TestCase):
         test = MountPoint("test", {"src":"/one/a", "target":"/three"}, self.nil_mount_type)
         test.mount()
 
+    def test_mount_logging(self):
+        test = MountPoint("test_log", {"src":"/one/a", "target":"/three"}, self.nil_mount_type)
+        with self.assertLogs('smount', level='INFO') as log_capture:
+            test.mount()
+        self.assertTrue(any("Mounting type 'nop'" in log for log in log_capture.output))
+
     def test_mount_expanded(self):
         src = "/one/*"
         test = MountPoint("test",

@@ -75,7 +75,7 @@ Mount destinations should exist and have right permissions on it.
 
 ## Improvement list
 
-- [ ] Add a logger with several verbosity levels
+- [X] Add a logger with several verbosity levels
 - [ ] Support udev for local disks matching
 - [ ] Build a curses interface, for fun and profit
 - [ ] Add a `variables` set in configuration for user defined variables
