@@ -5,7 +5,32 @@ import logging
 import argparse
 from smount.smount import SerialMounter
 
+try:
+    import readline
+    HAS_READLINE = True
+except ImportError:
+    HAS_READLINE = False
+
 logger = logging.getLogger("smount")
+
+# pylint: disable=too-few-public-methods
+class SmountCompleter:
+    def __init__(self, options):
+        self.options = sorted(options)
+        self.matches = []
+
+    def complete(self, text, state):
+        response = None
+        if state == 0:
+            if text:
+                self.matches = [s for s in self.options if s and s.startswith(text)]
+            else:
+                self.matches = self.options[:]
+        try:
+            response = self.matches[state]
+        except IndexError:
+            response = None
+        return response
 
 def configure_logging(verbose_count, quiet):
     if quiet:
@@ -75,33 +100,82 @@ def execute(mounter, command, arg) -> int:
 
     return ret
 
+def interactive_prompter(prompt_text):
+    old_completer = None
+    if HAS_READLINE:
+        old_completer = readline.get_completer()
+        # Enable default filename completion if prompting for paths/folders
+        path_keywords = ["path", "file", "target", "src", "dir", "folder"]
+        if any(k in prompt_text.lower() for k in path_keywords):
+            readline.set_completer_delims(' \t\n;')
+            readline.parse_and_bind("tab: complete")
+            readline.set_completer(None)
+        else:
+            readline.set_completer(None)
+
+    try:
+        val = input(prompt_text)
+        if HAS_READLINE and val:
+            readline.add_history(val)
+        return val
+    finally:
+        if HAS_READLINE:
+            readline.set_completer(old_completer)
+
+# pylint: disable=too-many-branches
 def run_interactive(mounter):
     mount_points = mounter.get_mount_points()
+
+    if HAS_READLINE:
+        options = ['q', 'r', 'quit', 'refresh']
+        options += [p.name for p in mount_points]
+        options += [str(i) for i in range(len(mount_points))]
+        completer = SmountCompleter(options)
+        readline.set_completer(completer.complete)
+        readline.parse_and_bind('tab: complete')
+
     while True:
         for i, mount_point in enumerate(mount_points):
             print(f"{i} - {mount_point}")
 
         try:
             selected = input("select> ")
+            if HAS_READLINE and selected:
+                readline.add_history(selected)
         except KeyboardInterrupt:
             selected = 'q'  # CTRL-C
         except EOFError:
             selected = 'q'  # CTRL-D
 
-        if selected == 'q':
+        if selected in ['q', 'quit']:
             sys.exit(0)
-        if selected in ['r', '']:
+        if selected in ['r', 'refresh', '']:
+            mounter.refresh_config()
+            mount_points = mounter.get_mount_points()
+            if HAS_READLINE:
+                options = ['q', 'r', 'quit', 'refresh']
+                options += [p.name for p in mount_points]
+                options += [str(i) for i in range(len(mount_points))]
+                readline.set_completer(SmountCompleter(options).complete)
             continue
 
-        try:
-            if int(selected) > len(mount_points) or int(selected) < 0:
-                print(f"Selection is invalid: '{selected}' is not within range")
+        point = mounter.get(selected)
+        if point is None:
+            try:
+                idx = int(selected)
+                if 0 <= idx < len(mount_points):
+                    point = mount_points[idx]
+                else:
+                    print(f"Selection is invalid: '{selected}' is not within range")
+                    continue
+            except ValueError:
+                print(f"Selection is invalid: '{selected}' is not "
+                      "a valid mountpoint name or index")
                 continue
-            point = mount_points[int(selected)]
-            if not point.toggle():
-                print("There was an error processing mount/unmount of the mountpoint")
-        except ValueError:
-            print(f"Selection is invalid: '{selected}' is not an integer")
+
+        prompter_fn = interactive_prompter if HAS_READLINE else None
+        if not point.toggle(prompter=prompter_fn):
+            print("There was an error processing mount/unmount of the mountpoint")
 
 def main(argv):
     parser = argparse.ArgumentParser(

@@ -224,10 +224,10 @@ class MountPoint:
         logger.debug("Target '%s' is not mounted", target)
         return False
 
-    def toggle(self) -> bool:
+    def toggle(self, prompter=None) -> bool:
         if self.ismounted():
-            return self.unmount()
-        return self.mount()
+            return self.unmount(prompter)
+        return self.mount(prompter)
 
     def __str__(self):
         logstr = f"""
@@ -338,6 +338,9 @@ class SerialMounter:
         self._load_types()
         self._load_variables()
         self._load_mounts()
+
+    def refresh_config(self) -> None:
+        self._refresh_config()
 
     def get_mount_points(self) -> list[MountPoint]:
         return self._mount_points
