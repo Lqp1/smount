@@ -13,9 +13,15 @@ class MountType:
         self._config = config
         self.name = name
 
-    def mount(self, src: str, target: str) -> bool:
+    @property
+    def config(self) -> dict:
+        return self._config
+
+    def mount(self, src: str, target: str, variables: dict = None) -> bool:
         cmd_template = string.Template(self._config['mount'])
         args = self.__args(src, target)
+        if variables:
+            args.update(variables)
         cmd = cmd_template.substitute(**args)
         logger.info("Mounting type '%s': src='%s', target='%s'", self.name, src, target)
         logger.debug("Running command: %s", cmd)
@@ -26,9 +32,11 @@ class MountType:
             logger.error("Failed to mount type '%s': command exited with non-zero code", self.name)
         return success
 
-    def unmount(self, src: str, target: str) -> bool:
+    def unmount(self, src: str, target: str, variables: dict = None) -> bool:
         cmd_template = string.Template(self._config['umount'])
         args = self.__args(src, target)
+        if variables:
+            args.update(variables)
         cmd = cmd_template.substitute(**args)
         logger.info("Unmounting type '%s': src='%s', target='%s'", self.name, src, target)
         logger.debug("Running command: %s", cmd)
@@ -56,10 +64,94 @@ class MountType:
 
 
 class MountPoint:
-    def __init__(self, name: str, config: dict, mean: MountType):
+    BUILTIN_VARIABLES = {'src', 'target', 'uid', 'gid', 'login'}
+
+    def __init__(self, name: str, config: dict, mean: MountType,
+                 variables: dict = None, prompter = None):
         self._config = config
         self._mean = mean
         self.name = name
+        self.variables = variables if variables is not None else {}
+        self.prompter = prompter if prompter is not None else input
+        self._resolved_cache = {}
+
+    def _get_referenced_variables(self) -> set:
+        referenced = set()
+        referenced.update(self._find_template_variables(self._config.get('src', '')))
+        referenced.update(self._find_template_variables(self._config.get('target', '')))
+        if self._mean:
+            referenced.update(self._find_template_variables(self._mean.config.get('mount', '')))
+            referenced.update(self._find_template_variables(self._mean.config.get('umount', '')))
+        return referenced
+
+    @staticmethod
+    def _find_template_variables(template_str: str) -> set:
+        if not template_str:
+            return set()
+        t = string.Template(template_str)
+        variables = set()
+        for match in t.pattern.finditer(template_str):
+            name = match.group('named') or match.group('braced')
+            if name:
+                variables.add(name)
+        return variables
+
+    def resolve_variables(self, prompter=None, prompt_fallback=True) -> dict:
+        if prompter is None:
+            prompter = self.prompter
+
+        referenced = self._get_referenced_variables()
+        resolved = {}
+
+        for var in referenced:
+            if var in self.BUILTIN_VARIABLES:
+                continue
+
+            # Check cache
+            if var in self._resolved_cache:
+                resolved[var] = self._resolved_cache[var]
+                continue
+
+            val = self.variables.get(var)
+            if val is None:
+                if not prompt_fallback:
+                    continue
+                logger.warning(
+                    "Variable '%s' is not defined in config. Prompting as fallback.",
+                    var
+                )
+                prompt_str = f"Enter value for {var}: "
+                val_input = prompter(prompt_str)
+                self._resolved_cache[var] = val_input
+                resolved[var] = val_input
+                continue
+
+            if val == "prompt":
+                if not prompt_fallback:
+                    continue
+                prompt_str = f"Enter value for {var}: "
+                val_input = prompter(prompt_str)
+                self._resolved_cache[var] = val_input
+                resolved[var] = val_input
+            elif isinstance(val, str) and val.startswith("prompt:"):
+                if not prompt_fallback:
+                    continue
+                prompt_str = val[len("prompt:"):]
+                val_input = prompter(prompt_str)
+                self._resolved_cache[var] = val_input
+                resolved[var] = val_input
+            else:
+                resolved[var] = val
+
+        return resolved
+
+    def get_resolved_src(self, resolved_vars: dict) -> str:
+        src_tpl = self._config.get('src', '')
+        return string.Template(src_tpl).safe_substitute(**resolved_vars)
+
+    def get_resolved_target(self, resolved_vars: dict) -> str:
+        target_tpl = self._config.get('target', '')
+        return string.Template(target_tpl).safe_substitute(**resolved_vars)
 
     def expand(self, path: str) -> str:
         expand_type = self._config.get("expand")
@@ -89,24 +181,32 @@ class MountPoint:
         logger.error("Unknown expansion type '%s' for mountpoint '%s'", expand_type, self.name)
         raise RuntimeError("Unknown expansion type")
 
-    def mount(self) -> bool:
-        target = self._config['target']
+    def mount(self, prompter=None) -> bool:
+        resolved_vars = self.resolve_variables(prompter, prompt_fallback=True)
+        target = self.get_resolved_target(resolved_vars)
         logger.debug("Preparing to mount mountpoint '%s' to target '%s'", self.name, target)
         if not os.path.isdir(target):
             logger.error("Target '%s' is not a directory or does not exist for mountpoint '%s'",
                          target, self.name)
             raise RuntimeError(f"{self.name}: target {target} is not ready.")
-        src_expanded = self.expand(self._config['src'])
-        return self._mean.mount(src_expanded, target)
+        src = self.get_resolved_src(resolved_vars)
+        src_expanded = self.expand(src)
+        return self._mean.mount(src_expanded, target, resolved_vars)
 
-    def unmount(self) -> bool:
-        target = self._config['target']
+    def unmount(self, prompter=None) -> bool:
+        resolved_vars = self.resolve_variables(prompter, prompt_fallback=True)
+        target = self.get_resolved_target(resolved_vars)
         logger.debug("Preparing to unmount mountpoint '%s' from target '%s'", self.name, target)
-        src_expanded = self.expand(self._config['src'])
-        return self._mean.unmount(src_expanded, target)
+        src = self.get_resolved_src(resolved_vars)
+        src_expanded = self.expand(src)
+        return self._mean.unmount(src_expanded, target, resolved_vars)
 
     def ismounted(self) -> bool:
-        target = self._config['target']
+        resolved_vars = self.resolve_variables(prompt_fallback=False)
+        target = self.get_resolved_target(resolved_vars)
+        if self._find_template_variables(target):
+            logger.debug("Target '%s' contains unresolved variables, assuming not mounted", target)
+            return False
         logger.debug("Checking if target '%s' is mounted", target)
         try:
             mounts = subprocess.check_output(["mount"]).decode("utf-8").splitlines()
@@ -191,6 +291,19 @@ class SerialMounter:
                 logger.error("YAML parsing error while loading mount types: %s", exc)
                 raise RuntimeError("Could not load config properly: " + str(exc)) from exc
 
+    def _load_variables(self):
+        for chunk in self._config:
+            try:
+                parsed = yaml.safe_load(chunk)
+                if parsed is None or 'variables' not in parsed:
+                    continue
+                for name, value in parsed['variables'].items():
+                    logger.debug("Loading global variable '%s': %s", name, value)
+                    self._variables[name] = value
+            except yaml.YAMLError as exc:
+                logger.error("YAML parsing error while loading variables: %s", exc)
+                raise RuntimeError("Could not load config properly: " + str(exc)) from exc
+
     def _load_mounts(self):
         for chunk in self._config:
             try:
@@ -204,8 +317,16 @@ class SerialMounter:
                         raise KeyError(config.get('type'))
                     mean = self._mount_types[config['type']]
                     logger.debug("Loading mountpoint '%s' with config: %s", name, config)
+
+                    # Merge global variables with mountpoint-specific variables
+                    mount_vars = dict(self._variables)
+                    if 'variables' in config:
+                        logger.debug("Loading variables for mountpoint '%s': %s",
+                                     name, config['variables'])
+                        mount_vars.update(config['variables'])
+
                     self._mount_points.append(
-                        MountPoint(name, config, mean))
+                        MountPoint(name, config, mean, variables=mount_vars))
             except yaml.YAMLError as exc:
                 logger.error("YAML parsing error while loading mountpoints: %s", exc)
                 raise RuntimeError("Could not load config properly: " + str(exc)) from exc
@@ -213,7 +334,9 @@ class SerialMounter:
     def _refresh_config(self) -> None:
         self._mount_types = {}
         self._mount_points = []
+        self._variables = {}
         self._load_types()
+        self._load_variables()
         self._load_mounts()
 
     def get_mount_points(self) -> list[MountPoint]:
