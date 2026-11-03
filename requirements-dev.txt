@@ -1,5 +1,5 @@
 pyyaml
-pylint==4.0.6
+pylint==4.0.9
 pyfakefs
 pytest
 setuptools
